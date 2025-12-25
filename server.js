@@ -53,11 +53,12 @@
 // showMenu()
 
 
-
+import 'dotenv/config';  // ES6 style mein dotenv import
 import readline from 'readline';
 import express from 'express';
 import connectDB from './config/dbconfig.js';
 import Todo from './model/taskmodel.js';
+
 
 const app = express();
 app.use(express.json());
