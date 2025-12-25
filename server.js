@@ -1,74 +1,62 @@
-// import readline from 'readline'
-// import express from 'express'
-// import connectDB from './config/dbconfig.js';
 
-// const app = express();
-// app.use(express.json());
-
-// connectDB();
-// app.listen(3000, () => {
-//     console.log('Server chal raha hai port 3000 par');
-// });
-
-// const rl = readline.createInterface({
-//     // reading and writing data
-//     input:process.stdin,
-//     output:process.stdout
-// })
-
-// const todos =[];
-// const showMenu = () => {
-//     console.log('\n1. kam add kreyie');
-//     console.log(' 2 : kam dekhna hy ');
-//     console.log('3 : band kro yr');
-
-//     rl.question('Apna option chunein: ', handleInput);
-// }
-// const handleInput = (option) => {
-// if(option === '1'){
-//     rl.question('Apna kam likhein: ', (todo) => {
-//         todos.push(todo);
-//         console.log(`"${todo}" kam list mein shamil kar diya gaya hai.`);
-//         showMenu();
-//     });
-// }
-// else if(option === '2'){
-//     console.log('\nApke tamam kam:');
-//     todos.forEach((todo, index) => {
-//         console.log(`${index + 1}. ${todo}`);
-//     });
-//     showMenu();
-// }
-// else if(option === '3'){
-//     //exit the app
-//     console.log('App band ki ja rahi hai. Khuda hafiz!');
-//     rl.close();
-// }
-// else{
-//     console.log('Ghalat option. Barah-e-karam dobara koshish karein.');
-//     showMenu();
-// }
-
-// }
-// showMenu()
-
-
-import 'dotenv/config';  // ES6 style mein dotenv import
-import readline from 'readline';
+import 'dotenv/config';
 import express from 'express';
-import connectDB from './config/dbconfig.js';
-import Todo from './model/taskmodel.js';
-
+import mongoose from 'mongoose';
+import cors from 'cors';
 
 const app = express();
+
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-// Database se connect karein
-connectDB();
+// MongoDB Connection
+let cachedDb = null;
 
-// REST API Routes
+const connectDB = async () => {
+    if (cachedDb) {
+        return cachedDb;
+    }
+    
+    try {
+        const db = await mongoose.connect(process.env.MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        cachedDb = db;
+        console.log('MongoDB connected');
+        return db;
+    } catch (error) {
+        console.error('MongoDB connection error:', error);
+        throw error;
+    }
+};
+
+// Todo Schema (yahan directly define kar rahe hain)
+const todoSchema = new mongoose.Schema({
+    text: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    completed: {
+        type: Boolean,
+        default: false
+    }
+}, {
+    timestamps: true
+});
+
+const Todo = mongoose.models.Todo || mongoose.model('Todo', todoSchema);
+
+// Routes
+app.get('/', (req, res) => {
+    res.json({ message: 'Todo API chal raha hai!' });
+});
+
 app.get('/api/todos', async (req, res) => {
     try {
+        await connectDB();
         const todos = await Todo.find().sort({ createdAt: -1 });
         res.json(todos);
     } catch (error) {
@@ -78,6 +66,7 @@ app.get('/api/todos', async (req, res) => {
 
 app.post('/api/todos', async (req, res) => {
     try {
+        await connectDB();
         const todo = new Todo({
             text: req.body.text
         });
@@ -88,99 +77,38 @@ app.post('/api/todos', async (req, res) => {
     }
 });
 
+app.put('/api/todos/:id', async (req, res) => {
+    try {
+        await connectDB();
+        const todo = await Todo.findByIdAndUpdate(
+            req.params.id,
+            {
+                text: req.body.text,
+                completed: req.body.completed
+            },
+            { new: true }
+        );
+        if (!todo) {
+            return res.status(404).json({ message: 'Todo nahi mila' });
+        }
+        res.json(todo);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
 app.delete('/api/todos/:id', async (req, res) => {
     try {
-        await Todo.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Todo delete ho gaya' });
+        await connectDB();
+        const todo = await Todo.findByIdAndDelete(req.params.id);
+        if (!todo) {
+            return res.status(404).json({ message: 'Todo nahi mila' });
+        }
+        res.json({ message: 'Todo delete ho gaya', deletedTodo: todo });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 });
 
-app.listen(3000, () => {
-    console.log('Server chal raha hai port 3000 par');
-});
-
-// CLI Interface
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-const showMenu = () => {
-    console.log('\n1. kam add kreyie');
-    console.log('2. kam dekhna hy');
-    console.log('3. kam delete kreyie');
-    console.log('4. band kro yr');
-
-    rl.question('Apna option chunein: ', handleInput);
-};
-
-const handleInput = async (option) => {
-    if (option === '1') {
-        rl.question('Apna kam likhein: ', async (todoText) => {
-            try {
-                const todo = new Todo({ text: todoText });
-                await todo.save();
-                console.log(`"${todoText}" kam database mein shamil kar diya gaya hai.`);
-            } catch (error) {
-                console.log('Error:', error.message);
-            }
-            showMenu();
-        });
-    } else if (option === '2') {
-        try {
-            const todos = await Todo.find();
-            console.log('\nApke tamam kam (Database se):');
-            if (todos.length === 0) {
-                console.log('Koi kam nahi hai.');
-            } else {
-                todos.forEach((todo, index) => {
-                    console.log(`${index + 1}. ${todo.text} (ID: ${todo._id})`);
-                });
-            }
-        } catch (error) {
-            console.log('Error:', error.message);
-        }
-        showMenu();
-    } else if (option === '3') {
-        try {
-            const todos = await Todo.find();
-            if (todos.length === 0) {
-                console.log('Koi kam nahi hai delete karne ke liye.');
-                showMenu();
-                return;
-            }
-            
-            console.log('\nKam list:');
-            todos.forEach((todo, index) => {
-                console.log(`${index + 1}. ${todo.text}`);
-            });
-            
-            rl.question('Kis number ka kam delete karna hai? ', async (num) => {
-                const index = parseInt(num) - 1;
-                if (index >= 0 && index < todos.length) {
-                    await Todo.findByIdAndDelete(todos[index]._id);
-                    console.log('Kam delete ho gaya!');
-                } else {
-                    console.log('Ghalat number!');
-                }
-                showMenu();
-            });
-        } catch (error) {
-            console.log('Error:', error.message);
-            showMenu();
-        }
-    } else if (option === '4') {
-        console.log('App band ki ja rahi hai. Khuda hafiz!');
-        rl.close();
-        process.exit(0);
-    } else {
-        console.log('Ghalat option. Barah-e-karam dobara koshish karein.');
-        showMenu();
-    }
-};
-
-showMenu();
-
+// Vercel ke liye export
 export default app;
