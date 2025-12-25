@@ -1,0 +1,28 @@
+{
+  "name": "cliapp",
+  "version": "1.0.0",
+  "description": "just havving some fum",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RabyaMuhandis/clitodo.git"
+  },
+  "author": "rabya rauf",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/RabyaMuhandis/clitodo/issues"
+  },
+  "homepage": "https://github.com/RabyaMuhandis/clitodo#readme",
+  "dependencies": {
+    "color": "^5.0.3",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongoose": "^9.0.2",
+    "nodemon": "^3.1.11",
+    "readline": "^1.3.0"
+  }
+}
