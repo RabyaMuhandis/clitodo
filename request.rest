@@ -1,0 +1,27 @@
+###
+# Sare todos dekhne ke liye
+GET http://localhost:3000/api/todos
+
+###
+GET https://clitodo.vercel.app/api/todos
+###
+# Naya todo add karne ke liye
+POST http://localhost:3000/api/todos
+Content-Type: application/json  
+
+{
+  "text": "New Task"
+}
+
+###
+POST https://clitodo.vercel.app/api/todos
+Content-Type: application/json  
+
+{
+  "text": "New Task"
+}
+
+
+###
+# Todo delete karne ke liye (MongoDB ID use karein, "1" nahi)
+DELETE http://localhost:3000/api/todos/6751234567890abcdef12345

@@ -181,3 +181,5 @@ const handleInput = async (option) => {
 };
 
 showMenu();
+
+export default app;
