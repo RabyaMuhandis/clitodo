@@ -1,43 +1,22 @@
-
-// import 'dotenv/config';
-// import express from 'express';
-
-// import cors from 'cors';
-// import connectDB from './config/dbconfig.js';
-// import router from './routes/todoroutes.js';
-require('dotenv/config');
-const express = require("express");
-const cors = require("cors")
-const router = require('./routes/todoroutes');
-const { default: connectDB } = require('./config/dbconfig');
-const app = express();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-app.use("/api" ,router)
-
-//     text: {
-//         type: String,
-//         required: true,
-//         trim: true
-//     },
-//     completed: {
-//         type: Boolean,
-//         default: false
-//     }
-// }, {
-//     timestamps: true
-// });
-
-// const Todo = mongoose.models.Todo || mongoose.model('Todo', todoSchema);
-
+// import Todo from "../model/taskmodel.js"
+// import connectDB from "../config/dbconfig.js";
+const Todo = require("../model/taskmodel")
+const connectDB= require("../config/dbconfig")
 // Routes
 // app.get('/', (req, res) => {
 //     res.json({ message: 'Todo API chal raha hai!' });
 // });
 
+
+const getTodos = async(req , res)=>{
+  try {
+        // await connectDB();
+        const todos = await Todo.find().sort({ createdAt: -1 });
+        res.json(todos);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
 // app.get('/api/todos', async (req, res) => {
 //     try {
 //         await connectDB();
@@ -48,6 +27,19 @@ app.use("/api" ,router)
 //     }
 // });
 
+
+const postTodos = async(req, res)=>{
+      try {
+        // await connectDB();
+        const todo = new Todo({
+            text: req.body.text
+        });
+        const savedTodo = await todo.save();
+        res.status(201).json(savedTodo);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+}
 // app.post('/api/todos', async (req, res) => {
 //     try {
 //         await connectDB();
@@ -81,7 +73,20 @@ app.use("/api" ,router)
 //     }
 // });
 
-// app.delete('/api/todos/:id', async (req, res) => {
+const deleteTodos = async(req, res)=>{
+       try {
+        // await connectDB();
+        const todo = await Todo.findByIdAndDelete(req.params.id);
+        if (!todo) {
+            return res.status(404).json({ message: 'Todo nahi mila' });
+        }
+        res.json({ message: 'Todo delete ho gaya', deletedTodo: todo });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+// app.delete('/api/todos/:id', a
+// sync (req, res) => {
 //     try {
 //         await connectDB();
 //         const todo = await Todo.findByIdAndDelete(req.params.id);
@@ -93,10 +98,14 @@ app.use("/api" ,router)
 //         res.status(500).json({ message: error.message });
 //     }
 // });
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
-});
-// Vercel ke liye export
-// export default app;
+// app.listen(3000, () => {
+//     console.log('Server is running on port 3000');
+// });
 
-module.exports= app;
+
+// export default  {getTodos, postTodos,deleteTodos}
+module.exports = {
+    getTodos,
+    postTodos,
+    deleteTodos
+}
